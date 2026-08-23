@@ -15,17 +15,28 @@ branch=$(git -C "$cwd" branch --show-current 2>/dev/null); [ -z "$branch" ] && b
 # has its own worktree (⑂) so a second session can drive it. "⇄—" is the two-hop rule
 # showing its own violation continuously rather than at an audit.
 #
-# Repo-provided: scripts/subtree.sh knows this project's branch shape. Where it is absent
-# (any other repo) fall back to the recorded-parent spine, abbreviated.
+# Repo-provided: the repo's own script knows its branch shape. TWO NAMES are accepted and
+# both are permanent, not a transition: family.sh is the name since 2026-08-23 (a subtree is
+# descendants only; the view shows ancestors too), and subtree.sh still exists on every branch
+# the rename has not reached — which today is all of them but anak_dev_ui. Where neither is
+# present, fall back to the recorded-parent spine.
+#
+# The fallback is silent BY DESIGN — it is how the plugin works in a repo with no such script.
+# That means a rename is indistinguishable from absence: the family line just quietly becomes
+# the spine, with no error. Observed the day of the rename. Hence: try both names.
 fam=""
-if [ -x "$cwd/../scripts/subtree.sh" ] || [ -n "$cwd" ]; then
+if [ -n "$cwd" ]; then
   root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || true)
-  if [ -n "$root" ] && [ -x "$root/scripts/subtree.sh" ]; then
+  fsh=""
+  for cand in family subtree; do
+    [ -n "$root" ] && [ -x "$root/scripts/$cand.sh" ] && { fsh="scripts/$cand.sh"; break; }
+  done
+  if [ -n "$fsh" ]; then
     # Cache on HEAD + the worktree list: the two things that change the answer. ~89ms cold.
-    ck="$COCKPIT_DATA/family.$(printf '%s' "$root$branch" | cksum | cut -d' ' -f1)"
+    ck="$COCKPIT_DATA/family.$(printf '%s' "$root$branch$fsh" | cksum | cut -d' ' -f1)"
     sig="$(git -C "$root" rev-parse HEAD 2>/dev/null)|$(git -C "$root" worktree list 2>/dev/null | cksum | cut -d' ' -f1)"
     if [ -f "$ck" ] && [ "$(head -1 "$ck")" = "$sig" ]; then fam=$(tail -n +2 "$ck")
-    else fam=$(cd "$root" && timeout 3 scripts/subtree.sh "$branch" --line 2>/dev/null || true)
+    else fam=$(cd "$root" && timeout 3 "./$fsh" "$branch" --line 2>/dev/null || true)
          [ -n "$fam" ] && { printf '%s\n%s\n' "$sig" "$fam" > "$ck"; }
     fi
   fi
