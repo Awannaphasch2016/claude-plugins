@@ -10,6 +10,7 @@ Where am I, what will this turn cost, and what is my context made of.
 | lines 5–6 `lab` · `ctx` | instrument | dim, no colour, no verdict: `areas · old · dup · tool · files` and the liveness strip `░░░░░░░▓██` |
 | line 7 `prefix` | alarm, conditional | `❄ idle Nm (lease expired) — next turn likely rebuilds ~Xk` — the free moment to compact or clear |
 | `/cockpit:felt rot\|tangled\|fine` | — | one timestamped mark in `felt.log` — the ground truth a dial needs to earn its colour |
+| `/cockpit:explain` | — | the cost mechanism: why a turn was expensive, what to cut, whether to clear or compact. Holds the derivation; reads prices from the bundled `claude-api` reference rather than copying them |
 | `/cockpit:report [days]` | — | per-session shape, daily trend, marks vs dials |
 
 ## Install
