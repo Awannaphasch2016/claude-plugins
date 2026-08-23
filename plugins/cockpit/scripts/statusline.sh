@@ -9,14 +9,38 @@ session=$(j '.session_name'); [ -z "$session" ] && session=$(j '.session_id' | c
 cwd=$(j '.workspace.current_dir'); [ -z "$cwd" ] && cwd=$(j '.cwd')
 project=$(j '.workspace.project_dir')
 branch=$(git -C "$cwd" branch --show-current 2>/dev/null); [ -z "$branch" ] && branch="detached"
-# Ancestry from recorded parents; abbreviated to root › … › last two hops so it fits.
-path=$("$COCKPIT_ROOT/scripts/lineage-path.sh" "$cwd" "$branch" 2>/dev/null)
-n=$(printf '%s' "$path" | awk -F' › ' '{print NF}')
-if [ "${n:-1}" -gt 3 ]; then
-  first=$(printf '%s' "$path" | awk -F' › ' '{print $1}'); last2=$(printf '%s' "$path" | awk -F' › ' '{print $(NF-1)" › "$NF}')
-  path="$first › …$((n-3)) › $last2"
+# THE FAMILY, not the spine. The spine ("how did I get here") is printed once by the
+# SessionStart hook and scrolls away; this line answers the question asked all day when
+# several sessions run in parallel: who is beside me, who is below me, and which of them
+# has its own worktree (⑂) so a second session can drive it. "⇄—" is the two-hop rule
+# showing its own violation continuously rather than at an audit.
+#
+# Repo-provided: scripts/subtree.sh knows this project's branch shape. Where it is absent
+# (any other repo) fall back to the recorded-parent spine, abbreviated.
+fam=""
+if [ -x "$cwd/../scripts/subtree.sh" ] || [ -n "$cwd" ]; then
+  root=$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null || true)
+  if [ -n "$root" ] && [ -x "$root/scripts/subtree.sh" ]; then
+    # Cache on HEAD + the worktree list: the two things that change the answer. ~89ms cold.
+    ck="$COCKPIT_DATA/family.$(printf '%s' "$root$branch" | cksum | cut -d' ' -f1)"
+    sig="$(git -C "$root" rev-parse HEAD 2>/dev/null)|$(git -C "$root" worktree list 2>/dev/null | cksum | cut -d' ' -f1)"
+    if [ -f "$ck" ] && [ "$(head -1 "$ck")" = "$sig" ]; then fam=$(tail -n +2 "$ck")
+    else fam=$(cd "$root" && timeout 3 scripts/subtree.sh "$branch" --line 2>/dev/null || true)
+         [ -n "$fam" ] && { printf '%s\n%s\n' "$sig" "$fam" > "$ck"; }
+    fi
+  fi
 fi
-[ -n "$path" ] && [ "$path" != "$branch" ] && branch="$path"
+if [ -n "$fam" ]; then branch="$fam"
+else
+# Ancestry from recorded parents; abbreviated to root › … › last two hops so it fits.
+  path=$("$COCKPIT_ROOT/scripts/lineage-path.sh" "$cwd" "$branch" 2>/dev/null)
+  n=$(printf '%s' "$path" | awk -F' › ' '{print NF}')
+  if [ "${n:-1}" -gt 3 ]; then
+    first=$(printf '%s' "$path" | awk -F' › ' '{print $1}'); last2=$(printf '%s' "$path" | awk -F' › ' '{print $(NF-1)" › "$NF}')
+    path="$first › …$((n-3)) › $last2"
+  fi
+    [ -n "$path" ] && [ "$path" != "$branch" ] && branch="$path"
+fi
 dirty=$(git -C "$cwd" status --porcelain --untracked-files=no 2>/dev/null | wc -l | tr -d ' ')
 # Where: the worktree name if inside .claude/worktrees/, else "main checkout"
 case "$cwd" in
