@@ -30,7 +30,17 @@ if [ -x "$cwd/../scripts/subtree.sh" ] || [ -n "$cwd" ]; then
     fi
   fi
 fi
-if [ -n "$fam" ]; then branch="$fam"
+# BOTH, since 0.2.1. The spine is the vertical question ("how did I get here", and how
+# deep am I); the family is the horizontal one ("who is beside me, where is a free seat").
+# Neither substitutes for the other, and the spine's abbreviation already keeps it short.
+if [ -n "$fam" ]; then
+  path=$(bash "$COCKPIT_ROOT/scripts/lineage-path.sh" "$cwd" "$branch" 2>/dev/null)
+  n=$(printf '%s' "$path" | awk -F' › ' '{print NF}')
+  if [ "${n:-1}" -gt 3 ]; then
+    first=$(printf '%s' "$path" | awk -F' › ' '{print $1}'); last2=$(printf '%s' "$path" | awk -F' › ' '{print $(NF-1)" › "$NF}')
+    path="$first › …$((n-3)) › $last2"
+  fi
+  [ -n "$path" ] && [ "$path" != "$branch" ] && branch="$path  ·  $fam" || branch="$fam"
 else
 # Ancestry from recorded parents; abbreviated to root › … › last two hops so it fits.
   path=$("$COCKPIT_ROOT/scripts/lineage-path.sh" "$cwd" "$branch" 2>/dev/null)
