@@ -1,0 +1,11 @@
+{
+  "name": "anak",
+  "owner": { "name": "Anak Wannaphachaiyong" },
+  "plugins": [
+    {
+      "name": "cockpit",
+      "source": "./plugins/cockpit",
+      "description": "Session-start orientation, the two-register statusline (runway · lab · ctx · cold prefix), and /felt marks"
+    }
+  ]
+}
