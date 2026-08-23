@@ -33,14 +33,10 @@ fi
 # BOTH, since 0.2.1. The spine is the vertical question ("how did I get here", and how
 # deep am I); the family is the horizontal one ("who is beside me, where is a free seat").
 # Neither substitutes for the other, and the spine's abbreviation already keeps it short.
-if [ -n "$fam" ]; then
-  path=$(bash "$COCKPIT_ROOT/scripts/lineage-path.sh" "$cwd" "$branch" 2>/dev/null)
-  n=$(printf '%s' "$path" | awk -F' › ' '{print NF}')
-  if [ "${n:-1}" -gt 3 ]; then
-    first=$(printf '%s' "$path" | awk -F' › ' '{print $1}'); last2=$(printf '%s' "$path" | awk -F' › ' '{print $(NF-1)" › "$NF}')
-    path="$first › …$((n-3)) › $last2"
-  fi
-  [ -n "$path" ] && [ "$path" != "$branch" ] && branch="$path  ·  $fam" || branch="$fam"
+# 0.3.0: --line now carries the FULL spine with ★ as the pivot, so the separate abbreviated
+# spine 0.2.1 printed beside it is gone — it duplicated the parent and self, and the elision
+# hid the hops worth seeing. Where subtree.sh is absent the spine still stands alone below.
+if [ -n "$fam" ]; then branch="$fam"
 else
 # Ancestry from recorded parents; abbreviated to root › … › last two hops so it fits.
   path=$("$COCKPIT_ROOT/scripts/lineage-path.sh" "$cwd" "$branch" 2>/dev/null)

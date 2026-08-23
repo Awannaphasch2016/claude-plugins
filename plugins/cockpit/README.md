@@ -5,7 +5,7 @@ Where am I, what will this turn cost, and what is my context made of.
 | piece | register | what it shows |
 |---|---|---|
 | SessionStart hook | — | `[where]` · `[family]` (2 hops up, 2 down, siblings, worktrees) · `[clean]/[dirty]` · `[worktrees]`. Emits `systemMessage` so it reaches the **user**, not only the agent. Stands down when the project ships its own SessionStart hook |
-| statusline line 1 | — | session · checkout · **the spine** (`develop › …2 › anak_dev_ui` — how deep am I) then **the branch family**: `↑parent ★you⑂ ↓child › grandchild ⇄siblings` — `⑂` marks a branch with its own worktree, so the parallel-capable seats are visible every turn, and `⇄—` is the two-hop rule showing its own violation. Falls back to the recorded-parent spine where the repo has no `scripts/subtree.sh` |
+| statusline line 1 | — | session · checkout · **the branch family as one structure**: the FULL lineage with `★` as the pivot — left of it is ancestry, right is descendants — a shared stem printed once then folded to `·`, `⑂` on any branch with its own worktree, and `⇄` siblings at the end. Nothing is elided under 8 segments, deliberately: a long line is the smell. Falls back to the recorded-parent spine where the repo has no `scripts/subtree.sh` |
 | statusline lines 2–4 | alarm | context + `↑k/turn` · session/week limits with countdowns · **runway** (`%/active-h · ⛽fuel-h · lands ~N%` + verdict) |
 | lines 5–6 `lab` · `ctx` | instrument | dim, no colour, no verdict: `areas · old · dup · tool · files` and the liveness strip `░░░░░░░▓██` |
 | line 7 `prefix` | alarm, conditional | `❄ idle Nm (lease expired) — next turn likely rebuilds ~Xk` — the free moment to compact or clear |
