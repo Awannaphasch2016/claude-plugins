@@ -1,11 +1,18 @@
 {
   "name": "anak",
-  "owner": { "name": "Anak Wannaphachaiyong" },
+  "owner": {
+    "name": "Anak Wannaphachaiyong"
+  },
   "plugins": [
     {
       "name": "cockpit",
       "source": "./plugins/cockpit",
-      "description": "Session-start orientation, the two-register statusline (runway · lab · ctx · cold prefix), and /felt marks"
+      "description": "Session-start orientation, the two-register statusline (runway \u00b7 lab \u00b7 ctx \u00b7 cold prefix), and /felt marks"
+    },
+    {
+      "name": "authoring",
+      "source": "./plugins/authoring",
+      "description": "Vocabulary + shelving discipline: /semantic-refactor, /shelve, and the setup that writes their per-repo contract"
     }
   ]
 }
