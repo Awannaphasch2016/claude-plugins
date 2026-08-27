@@ -21,8 +21,11 @@ under their head so scope is expressed by structure, not by remembering; `lab`
 was renamed `dials` because lab-vs-lap was two meanings one letter apart on
 adjacent lines, and this repo has already paid for that pattern once:
   lap N    — turns this lap + mix bar (assistant ▰ / tool ▱ / you ▷), 12 cells = 100%
-    dials  — areas · old · dup · tool · files, all THIS LAP
-    ctx    — liveness strip over THIS LAP's added tokens
+   ├ dials — areas · old · dup · tool · files, all THIS LAP
+   └ ctx   — liveness strip over THIS LAP's added tokens
+  (the ├/└ connectors carry the indent IN GLYPHS because the statusline
+  renderer may trim leading whitespace — an indent that only exists as
+  spaces is an indent the display can silently remove)
   race     — the same mix bar for the whole session
   stint    — compact cadence: sparkline of closed-lap lengths (▁–█ scaled to the
              longest), ▏ = this lap still running · raw lengths · this lap vs
@@ -152,7 +155,7 @@ if n >= 5:
         q = p.split("/"); return "/".join(q[:4]) if len(q) > 4 else p
     recent_reads = [p for t in turns[-40:] for p in t["files"]]
     areas = len(set(area(p) for p in recent_reads))
-    lines.append(f"  dials areas {areas} · old {old_pct:.0f}% · dup {100 * dup_tok / ctx:.1f}% · tool {tool_pct:.0f}% · files {len(reads)}")
+    lines.append(f" ├ dials areas {areas} · old {old_pct:.0f}% · dup {100 * dup_tok / ctx:.1f}% · tool {tool_pct:.0f}% · files {len(reads)}")
 
     # liveness strip — 10 segments by cumulative tokens added THIS LAP, oldest left.
     total = sum(t["added"] for t in turns) or 1
@@ -174,7 +177,7 @@ if n >= 5:
         elif hits: glyph.append("▒")
         else: glyph.append("░")
     live_pct = 100 * sum(seg_tok[s] for s in range(10) if glyph[s] in "█▓") / total
-    lines.append(f"  ctx   {''.join(glyph)}  {ctx // 1000}k · live {live_pct:.0f}% · old→new")
+    lines.append(f" └ ctx  {''.join(glyph)}  {ctx // 1000}k · live {live_pct:.0f}% · old→new")
 
 # --- the race block: baseline mix, then compact cadence -----------------------
 lines.append(f"race    {race[1]:>5}t ▐{bar(race[1], race[2], race[0])}▏ {labels(race[1], race[2], race[0])}")
