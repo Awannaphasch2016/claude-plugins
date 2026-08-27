@@ -1,6 +1,8 @@
 {
   "name": "authoring",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Vocabulary and shelving discipline for agent-facing writing: /semantic-refactor maintains a curated glossary, /shelve places any passage by the age test, and setup-anak-skills writes the per-repo contract both read.",
-  "author": { "name": "Anak Wannaphachaiyong" }
+  "author": {
+    "name": "Anak Wannaphachaiyong"
+  }
 }

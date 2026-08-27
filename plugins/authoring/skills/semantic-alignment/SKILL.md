@@ -1,9 +1,11 @@
 ---
-name: semantic-refactor
+name: semantic-alignment
 description: Change the repo's shared vocabulary without breaking it. Use when a term is being defined or renamed, when prose contradicts the glossary, when a borrowed word needs its tradition and departure stated, or when any work is about to introduce vocabulary the glossary does not hold.
 ---
 
-# Semantic refactor
+# Semantic alignment
+
+*(Renamed from `semantic-refactor`, 2026-08-28 — "refactor" names one move; the purpose is keeping concepts, words, and usage in agreement. Not the AI-safety sense of alignment.)*
 
 Refactoring, applied to vocabulary: the concepts stay, only their naming and
 decomposition change. It carries more weight than the code kind because there
