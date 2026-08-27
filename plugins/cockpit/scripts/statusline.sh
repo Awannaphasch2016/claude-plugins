@@ -155,10 +155,50 @@ if [ -n "$rw_verdict" ] && [ -n "$week" ]; then
   fi
 fi
 
-# ---- Lines 5–6: the INSTRUMENT register — dim, no colour, no verdict, same order every
+# ---- goal — the work-graph pace line. INSTRUMENT register (dim), sits between the
+# alarm block above and the lap block below. Renders ~/.claude/cockpit/pace.json — a
+# CACHE the lens dual-writes; this script NEVER computes graph facts (one head, one
+# computation — the lens's). What it does recompute, every render, is the TIME AXIS:
+# slack = (due − now) − required_d, because calendar drift is deterministic and local.
+# The trend arrow compares live required rate to the rate at the last read: ↗ means
+# lock-in approaching on calendar burn alone. Turns since the read = effort poured
+# since the strategy picture was taken (an economic meter, banked as actuals by the
+# lens on completion). The provenance stamp (run N · age) is the fresh-vs-stale law
+# on one token: NEVER render this line without it.
+pj="$COCKPIT_DATA/pace.json"; [ ! -f "$pj" ] && pj="$HOME/.claude/cockpit/pace.json"
+tx=$(j '.transcript_path')
+if [ -f "$pj" ]; then
+  gl=$(python3 - "$pj" "${tx:-}" 2>/dev/null <<'PYG'
+import json,sys,os,datetime as dt
+p=json.load(open(sys.argv[1])); tx=sys.argv[2] if len(sys.argv)>2 else ""
+now=dt.datetime.now(dt.timezone.utc)
+due=dt.datetime.fromisoformat(p["due"].replace("Z","+00:00"))
+asof=dt.datetime.fromisoformat(p["asof_ts"].replace("Z","+00:00"))
+tt=(due-now).total_seconds()/86400; req=p["required_d"]
+slack=tt-req; rate=req/tt if tt>0 else 99
+r0=p.get("rate_at_read",rate)
+arrow="↗" if rate>r0+0.005 else ("↘" if rate<r0-0.005 else "→")
+cells=8; fill=max(0,min(cells,round(slack/3.0*cells)))
+bar="▰"*fill+"▱"*(cells-fill)
+age=(now-asof).total_seconds(); ah=age/3600
+ages=f"{age/60:.0f}m" if ah<1 else (f"{ah:.0f}h" if ah<48 else f"{ah/24:.0f}d")
+turns=0
+if tx and os.path.isfile(tx):
+    iso=p["asof_ts"][:19]
+    for line in open(tx,errors="ignore"):
+        if '"type":"assistant"' in line and '"isSidechain":true' not in line:
+            i=line.find('"timestamp":"')
+            if i>=0 and line[i+13:i+32]>=iso: turns+=1
+stale=" ⚠" if ah>24 else ""
+print(f'{p["goal"]} {tt:.1f}d ▐{bar}▏ slack {slack:.1f}d · req {rate:.2f} {arrow} · head: {p["head"]} · {turns}t   (run {p["asof_run"]} · {ages}{stale})')
+PYG
+)
+  [ -n "$gl" ] && printf '%sgoal    %s%s\n' "$d" "$gl" "$r"
+fi
+
+# ---- Lines below: the INSTRUMENT register — dim, no colour, no verdict, same order every
 # turn. Candidates the eye learns from; promotion to the alarm register above happens in
 # ~/.claude/metrics.md by evidence (the /felt marks), never by looking good once.
-tx=$(j '.transcript_path')
 if [ -n "$tx" ] && [ -f "$tx" ] && [ -x "$COCKPIT_ROOT/scripts/ctxlab.py" ]; then
   lab=$(timeout 2 python3 "$COCKPIT_ROOT/scripts/ctxlab.py" "$tx" 2>/dev/null)
   [ -n "$lab" ] && printf '%s%s%s\n' "$d" "$lab" "$r"
