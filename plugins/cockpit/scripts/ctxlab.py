@@ -15,20 +15,24 @@ freshly-compacted context and read 616% the turn after a compact. A race-scope
 numerator over a lap-scope denominator is structurally a lie; scoping both sides to
 the lap removes the class, not the instance.
 
-The lines, in order:
-  lap N  — turns this lap + mix bar (assistant ▰ / tool ▱ / you ▷), 12 cells = 100%
-  race   — the same bar for the whole session
-  stint  — compact cadence: sparkline of closed-lap lengths (▁–█ scaled to the
-           longest), ▏ = this lap still running · raw lengths · this lap vs last ·
-           median. Lap length is itself a reading: a lap ends when context fills,
-           so more turns per lap = lighter burn per turn — endurance. Shown once a
-           lap has closed; cadence needs history.
-  box    — first ~5 turns of a fresh lap only: the previous lap just closed and is
-           judgeable, so this is the /felt moment — was the box rain (rot forced
-           it) or planned (chosen to set up the next lap)? Marks go to metrics.md;
-           the line retires itself once the lap is underway.
-  lab    — the dials (areas · old · dup · tool · files), all THIS LAP
-  ctx    — liveness strip over THIS LAP's added tokens
+The lines, GROUPED BY SCOPE — the lap block first (it is what you are driving),
+the race block after (it is the baseline). The two lap-detail lines are indented
+under their head so scope is expressed by structure, not by remembering; `lab`
+was renamed `dials` because lab-vs-lap was two meanings one letter apart on
+adjacent lines, and this repo has already paid for that pattern once:
+  lap N    — turns this lap + mix bar (assistant ▰ / tool ▱ / you ▷), 12 cells = 100%
+    dials  — areas · old · dup · tool · files, all THIS LAP
+    ctx    — liveness strip over THIS LAP's added tokens
+  race     — the same mix bar for the whole session
+  stint    — compact cadence: sparkline of closed-lap lengths (▁–█ scaled to the
+             longest), ▏ = this lap still running · raw lengths · this lap vs
+             last · median. Lap length is itself a reading: a lap ends when
+             context fills, so more turns per lap = lighter burn per turn.
+             Shown once a lap has closed; cadence needs history.
+  box      — first ~5 turns of a fresh lap only: the previous lap just closed and
+             is judgeable, so this is the /felt moment — was the box rain (rot
+             forced it) or planned (chosen to set up the next lap)? Marks go to
+             metrics.md; the line retires itself once the lap is underway.
 
 The lap and race bars are the same fixed width on purpose: a stacked bar's only
 honest job is composition, so equal widths make lap-vs-race mix drift visible as
@@ -132,34 +136,11 @@ def labels(a, t, u):
     tot = max(1, a + t + u)
     return f"a{100 * a // tot} · t{100 * t // tot} · u{100 * u // tot}"
 
+# --- the lap block: head line, then its detail lines indented under it --------
 lines = []
 lines.append(f"lap {lap_no:<3} {la[1]:>5}t ▐{bar(la[1], la[2], la[0])}▏ {labels(la[1], la[2], la[0])}")
-lines.append(f"race    {race[1]:>5}t ▐{bar(race[1], race[2], race[0])}▏ {labels(race[1], race[2], race[0])}")
 
-# --- stint: compact cadence -----------------------------------------------------
-closed = [m[1] for m in mix[:-1]]
-if closed:
-    mx = max(closed) or 1
-    spark = "".join("▁▂▃▄▅▆▇█"[min(7, int(8 * c / mx))] for c in closed) + "▏"
-    srt = sorted(closed); mid = len(srt) // 2
-    med = srt[mid] if len(srt) % 2 else (srt[mid - 1] + srt[mid]) // 2
-    r = la[1] / max(1, closed[-1])
-    ratio = f"×{r:.0f}" if r >= 10 else (f"×{r:.1f}" if r >= 1 else f"×{r:.2f}")
-    lens = "/".join(str(c) for c in closed)
-    lines.append(f"stint   {spark} {lens}t · {ratio} of last · median {med}t")
-    # the /felt moment: the previous lap just closed and is judgeable
-    if la[1] < 5:
-        lines.append(f"box     lap {lap_no - 1} closed at {closed[-1]}t · /felt it — rain or planned?")
-    # telemetry, not cockpit: closed laps to a file for after the race
-    try:
-        arch = [{"n": i + 1, "user": m[0], "asst": m[1], "tool": m[2],
-                 "started": lap_ts[i][0], "ended": lap_ts[i][1]}
-                for i, m in enumerate(mix[:-1])]
-        with open(f"{data}/laps.{h}.json", "w") as f:
-            json.dump({"transcript": tx, "laps": arch}, f)
-    except Exception: pass
-
-# --- lab dials + ctx strip: THIS LAP, and quiet while the lap is too young ----
+# dials + ctx strip: THIS LAP, and quiet while the lap is too young
 n = len(turns)
 if n >= 5:
     ctx = turns[-1]["ctx"] or 1
@@ -171,7 +152,7 @@ if n >= 5:
         q = p.split("/"); return "/".join(q[:4]) if len(q) > 4 else p
     recent_reads = [p for t in turns[-40:] for p in t["files"]]
     areas = len(set(area(p) for p in recent_reads))
-    lines.append(f"lab     areas {areas} · old {old_pct:.0f}% · dup {100 * dup_tok / ctx:.1f}% · tool {tool_pct:.0f}% · files {len(reads)}")
+    lines.append(f"  dials areas {areas} · old {old_pct:.0f}% · dup {100 * dup_tok / ctx:.1f}% · tool {tool_pct:.0f}% · files {len(reads)}")
 
     # liveness strip — 10 segments by cumulative tokens added THIS LAP, oldest left.
     total = sum(t["added"] for t in turns) or 1
@@ -193,7 +174,31 @@ if n >= 5:
         elif hits: glyph.append("▒")
         else: glyph.append("░")
     live_pct = 100 * sum(seg_tok[s] for s in range(10) if glyph[s] in "█▓") / total
-    lines.append(f"ctx     {''.join(glyph)}  {ctx // 1000}k · live {live_pct:.0f}% · old→new")
+    lines.append(f"  ctx   {''.join(glyph)}  {ctx // 1000}k · live {live_pct:.0f}% · old→new")
+
+# --- the race block: baseline mix, then compact cadence -----------------------
+lines.append(f"race    {race[1]:>5}t ▐{bar(race[1], race[2], race[0])}▏ {labels(race[1], race[2], race[0])}")
+closed = [m[1] for m in mix[:-1]]
+if closed:
+    mx = max(closed) or 1
+    spark = "".join("▁▂▃▄▅▆▇█"[min(7, int(8 * c / mx))] for c in closed) + "▏"
+    srt = sorted(closed); mid = len(srt) // 2
+    med = srt[mid] if len(srt) % 2 else (srt[mid - 1] + srt[mid]) // 2
+    r = la[1] / max(1, closed[-1])
+    ratio = f"×{r:.0f}" if r >= 10 else (f"×{r:.1f}" if r >= 1 else f"×{r:.2f}")
+    lens = "/".join(str(c) for c in closed)
+    lines.append(f"stint   {spark} {lens}t · {ratio} of last · median {med}t")
+    # the /felt moment: the previous lap just closed and is judgeable
+    if la[1] < 5:
+        lines.append(f"box     lap {lap_no - 1} closed at {closed[-1]}t · /felt it — rain or planned?")
+    # telemetry, not cockpit: closed laps to a file for after the race
+    try:
+        arch = [{"n": i + 1, "user": m[0], "asst": m[1], "tool": m[2],
+                 "started": lap_ts[i][0], "ended": lap_ts[i][1]}
+                for i, m in enumerate(mix[:-1])]
+        with open(f"{data}/laps.{h}.json", "w") as f:
+            json.dump({"transcript": tx, "laps": arch}, f)
+    except Exception: pass
 
 out = "\n".join(lines) + "\n"
 open(cache, "w").write(key + "\n" + out); print(out, end="")
