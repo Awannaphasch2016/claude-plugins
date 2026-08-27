@@ -1,7 +1,7 @@
 {
   "name": "cockpit",
-  "version": "0.4.1",
-  "description": "Where am I in the branch family, what will this turn cost, and what is my context made of \u2014 a session-start hook, a seven-line statusline in two registers, and /felt marks that let a dial earn its colour.",
+  "version": "0.5.0",
+  "description": "Where am I in the branch family, what will this turn cost, and what is my context made of — a session-start hook, a seven-line statusline in two registers, and /felt marks that let a dial earn its colour.",
   "author": {
     "name": "Anak Wannaphachaiyong"
   },
