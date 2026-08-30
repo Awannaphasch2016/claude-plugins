@@ -3,7 +3,8 @@
 # The sponsor's landing word IS running this script. It refuses loudly or
 # lands completely; there is no third state. SUMMARY line per house style.
 set -euo pipefail
-ID="${1:?usage: land.sh <change-id>  (branch change/<change-id>)}"
+CHECK=0; [ "${1:-}" = "--check" ] && { CHECK=1; shift; }
+ID="${1:?usage: land.sh [--check] <change-id>  (branch change/<change-id>)}"
 BR="change/$ID"; P=0; F=0
 say(){ echo "  $1"; }
 pass(){ P=$((P+1)); say "✓ $1"; }
@@ -46,6 +47,7 @@ done < <(git diff --name-only main..HEAD -- 'plugins/*/skills/*/SKILL.md' | grep
 
 echo "SUMMARY land-gates $P/$((P+F))$( [ $F -gt 0 ] && echo " · $F failed")"
 [ $F -gt 0 ] && { echo "REFUSED — fix and rerun. Nothing merged."; exit 1; }
+[ $CHECK = 1 ] && { echo "CHECK MODE — gates green, nothing merged. Landing awaits the sponsor: land.sh $ID"; exit 0; }
 
 # the landing, atomic: merge --no-ff, tag each touched plugin's version, push
 git checkout -q main
@@ -54,6 +56,6 @@ for pl in $TOUCHED; do
   V=$(python3 -c "import json;print(json.load(open('plugins/$pl/.claude-plugin/plugin.json'))['version'])")
   git tag -f "$pl-v$V"
 done
-git push -q origin main --tags
+git push -q "${LAND_PUSH_URL:-origin}" main --tags
 echo "LANDED: $BR → main · tags: $(for pl in $TOUCHED; do python3 -c "import json;print('$pl-v'+json.load(open('plugins/$pl/.claude-plugin/plugin.json'))['version'])"; done | tr '\n' ' ')"
 echo "next: 'claude plugin update' (or marketplace refresh) carries it to each machine's cache"
