@@ -1,0 +1,7 @@
+{
+  "id": "plugin_landing",
+  "stations": ["trigger", "perceive", "verify", "confirm", "continue"],
+  "decisions": [
+    { "id": "land", "at": "confirm", "surface": "approval", "authority": "human_gate" }
+  ]
+}
