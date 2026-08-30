@@ -1,0 +1,341 @@
+<meta charset="utf-8">
+<title>The Move Board</title>
+<style>
+  :root{--bg:#F6F6FA;--surface:#FFFFFF;--ink:#20222E;--muted:#63677A;--line:#DCDDE8;
+    --acc:#4F51C8;--acc-soft:#EEEEFB;--agent:#0E7F74;--agent-soft:#E6F4F1;
+    --warn:#A85B00;--warn-soft:#FBF1E2;--drop:#9A9DB0;--zap:#C13333;--zap-soft:#FAE9E9;}
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+    --bg:#15161D;--surface:#1D1E28;--ink:#E6E7F0;--muted:#9CA0B4;--line:#303246;
+    --acc:#9B9DF2;--acc-soft:#262848;--agent:#3ECAB8;--agent-soft:#123632;
+    --warn:#E0A458;--warn-soft:#3A2C17;--drop:#6A6E85;--zap:#E06B6B;--zap-soft:#3A1D1D;}}
+  :root[data-theme="dark"]{
+    --bg:#15161D;--surface:#1D1E28;--ink:#E6E7F0;--muted:#9CA0B4;--line:#303246;
+    --acc:#9B9DF2;--acc-soft:#262848;--agent:#3ECAB8;--agent-soft:#123632;
+    --warn:#E0A458;--warn-soft:#3A2C17;--drop:#6A6E85;--zap:#E06B6B;--zap-soft:#3A1D1D;}
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);margin:0;font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .page{max-width:940px;margin:0 auto;padding:36px 20px 70px}
+  h1{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:clamp(23px,4vw,30px);margin:0 0 4px}
+  .stamp{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);margin:8px 0 0;display:flex;flex-wrap:wrap;gap:6px 20px}
+  .stamp b{color:var(--ink)}
+  .lens-quote{margin:16px 0 0;padding:12px 16px;background:var(--acc-soft);border-left:3px solid var(--acc);border-radius:0 8px 8px 0;font-size:14px}
+  .stale{margin:12px 0 0;padding:12px 16px;background:var(--warn-soft);border-left:3px solid var(--warn);border-radius:0 8px 8px 0;font-size:13.5px}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 22px;font-size:12.5px;color:var(--muted);margin-top:14px;align-items:center}
+  .legend i{display:inline-block;width:22px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .constraint{margin-top:22px;background:var(--surface);border:2px solid var(--acc);border-radius:12px;padding:16px 18px;position:relative}
+  .constraint .zaptag{position:absolute;top:-11px;left:14px;background:var(--acc);color:#fff;font:700 11px ui-monospace,Consolas,monospace;letter-spacing:.1em;border-radius:8px;padding:2px 10px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:14px;margin-top:16px}
+  .q{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;min-height:140px}
+  .q h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 2px;font-weight:700}
+  .q .verb{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+  .q2{border-top:3px dashed var(--acc)} .q3{border-top:3px solid var(--agent)} .q4{border-top:3px solid var(--drop)}
+  .item{display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px;flex-wrap:wrap}
+  .item:last-child{border-bottom:0}
+  .item .n{font-family:ui-monospace,Consolas,monospace;font-weight:700;white-space:nowrap;color:var(--acc)}
+  .q3 .item .n{color:var(--agent)} .q4 .item{color:var(--muted)}
+  .item .why{color:var(--muted);font-size:12.5px}
+  .item.yours{border-left:3px solid var(--acc);padding-left:10px}
+  .q3 .item.yours{border-left-color:var(--agent)}
+  .item.waits{border-left:3px solid var(--warn);padding-left:10px;background:var(--warn-soft);border-radius:0 6px 6px 0}
+  .item.inert{border-left:3px dashed var(--drop);padding-left:10px;opacity:.85}
+  .who{display:inline-block;font:600 10.5px ui-monospace,Consolas,monospace;border-radius:8px;padding:1px 7px;white-space:nowrap;vertical-align:1px}
+  .who.w{background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn)}
+  .who.c{background:var(--bg);border:1px dashed var(--drop);color:var(--muted)}
+  .mv{display:inline-block;font:800 10.5px ui-monospace,Consolas,monospace;letter-spacing:.06em;border-radius:4px;padding:2px 8px;white-space:nowrap;vertical-align:1px}
+  .mv.agent{background:var(--agent);color:#fff}
+  .mv.human{background:var(--warn);color:#fff}
+  .mv.either{background:var(--acc);color:#fff}
+  .mv.done{background:transparent;color:var(--muted);border:1px solid var(--line);text-decoration:line-through}
+  .mv.ptr{background:transparent;color:var(--drop);border:1px dashed var(--drop)}
+  .tag{display:inline-block;font:600 10px ui-monospace,Consolas,monospace;border:1px solid currentColor;border-radius:8px;padding:1px 7px;white-space:nowrap;vertical-align:1px}
+  .discover{background:var(--agent-soft);border:1px dashed var(--agent);border-radius:10px;padding:10px 14px;margin-top:14px;font-size:13.5px}
+  footer{border-top:1px solid var(--line);margin-top:36px;padding-top:14px;font-size:12.5px;color:var(--muted)}
+  code{font-family:ui-monospace,Consolas,monospace;font-size:.9em;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+</style>
+<div class="page">
+<h1>🎯 The Move Board</h1>
+<div class="stamp">
+  <span>invocation <b>29 (session, the page finally READ) · Sun 2026-08-30 09:30 BKK — DOM repaired, contradictions removed</b></span>
+  <span>graph read <b>55 open · ONE goal lineage: G1 v1.0 BANKED (delivery pin Tue 10:00) + v1.1 STRETCH, same deadline · hygiene clean</b></span>
+  <span>estimates <b>t-shirt ×1.0 · three actuals, all ahead · comfort 0.75 d/d PROVISIONAL (yours to declare)</b></span>
+</div>
+<p style="margin:14px 0 0;padding:10px 14px;background:var(--agent-soft);border:1.5px solid var(--agent);border-radius:10px;font-size:13px">
+<strong>Δ since run 24:</strong> run 24's "clean rebuild" over-corrected — it deleted the board's
+BODY (the constraint band, the priority slices, the Δ strip, the standing banners) and left two
+charts wearing the Move Board's name. Every standing element is restored below with CURRENT
+facts (the fossils stay dead — content refreshed, structure returned). The two visuals stand where the sponsor put them. <strong>Run 26:</strong> the Trajectory's foreign color tokens remapped to the board palette (the delivery pin is RED again — it silently lost its color crossing pages) and the <strong>pace panel restored</strong> as a standing element, recomputed (slack 2.00 · free 1.00 · ticks 0.048 / comfort 0.75 / core 0.88 / full 1.48). Its retirement, like the Trajectory's, traced to the agent's misframed chip options — both now standing again. <strong>Run 27:</strong> the three instruments reordered to the sponsor's reading order, each captioned with its question — ① pace ("how am I doing?") → ② trajectory ("how is my performance affecting this race and the next?") → ③ horizon ("the overall view of the rest of the race"). <strong>Run 28:</strong> the ⚡ constraint band moved to sit DIRECTLY above the quadrant grid — ToC and the modified four-quadrant are one decision unit, consumed together (what governs · the moves relative to it). <strong>Run 29 — the sponsor asked "is this what I want?" and the honest answer was NO:</strong> reading the LIVE page found (a) broken DOM from run 28's surgery — the constraint band, grid and footer were rendering OUTSIDE the page column at full browser width (the "width change"); repaired. (b) contradictions: the Horizon still claimed the gauges were retired while the pace panel stood above it; the guard chip appeared twice; full-push wore two numbers in two units. All unified (one guard on the Horizon; ≈×2 = 1.48 d/d everywhere, declared as re-displays). (c) NAMED, awaiting the sponsor's word: the restored Trajectory duplicates the Horizon's queue/ghost/spill content — "slim it" (slopes only) or "keep as is".</p>
+<p class="lens-quote"><strong>The standing lens:</strong> Tuesday is everything. Committed half
+banked (0.1d event); the stretch is a priced choice, not an obligation (F8 by Tue ~01:00 at
+plain comfort · core ×1.14 · all ×1.91); what goes unchased dissolves scored into G2. The
+constraint is the sponsor's three words below.</p>
+<p class="stale"><strong>⚠ This ordering died with its conversation.</strong> One invocation's trace —
+re-ask, it is one read cheap. Importance = the lens · urgency = the graph · border = whose move ·
+chip = the move. All data is REAL: goals from the milestones, the chain from the live graph,
+estimates t-shirt at ×1.0 with three ahead-actuals. The labels win, always.</p>
+<section style="margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px">
+    <h2 style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0;font-weight:700;color:var(--muted)">The declared grammar — every mark below draws ONLY from this table</h2>
+    <span style="font-size:10.5px;color:var(--agent);font-family:ui-monospace,Consolas,monospace">algebra audit run 20: all marks declared · 2 overloads resolved (dashed, hatch — scoped)</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:4px 22px;font-size:12px;color:var(--muted);margin-top:8px">
+    <span><b style="color:var(--ink)">color</b> — indigo = committed/yours · amber = waits-on-a-person / aspirational · teal = agent-verified/computed · grey = dormant/uncomputed · red = fixed-in-time (opens for nobody)</span>
+    <span><b style="color:var(--ink)">stroke (charts)</b> — solid = fact or committed · dashed+amber = aspirational (a choice; may dissolve) · dashed+grey = ghost (undated; uncomputed)</span>
+    <span><b style="color:var(--ink)">stroke (queue lists)</b> — dashed left-border = inert until its blocker closes (list scope only, by declaration)</span>
+    <span><b style="color:var(--ink)">fill patterns</b> — hatch inside a SOLID bar = insurance (spent only by surprises; fuel scope) · hatch inside a DASHED frame = ghost interior (uncomputed)</span>
+    <span><b style="color:var(--ink)">bars &amp; the cascade</b> — bar = a task; length = estimate ÷ comfort (declared, provisional); bars cascade in burn order, so a bar's right edge IS its ETA · crossing the red line = needs push (an ask, never a verdict) · hatched dashed bar = illustrative position (undated — marked as invented)</span>
+    <span><b style="color:var(--ink)">points &amp; pins</b> — dot on a slope = ETA (line ∩ boundary; dot color follows its segment's class) · flag on a red line = delivery pin · 🎧 chip = guard, wearing computed-quiet or a radio call — computed-quiet ≠ absent</span>
+  </div>
+</section>
+
+
+<section style="margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px 14px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px">
+    <h2 style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0;font-weight:700;color:var(--muted)">① Pace panel — "how am I doing?"</h2>
+    <span style="font-size:10.5px;color:var(--muted);font-family:ui-monospace,Consolas,monospace">instruments, not alarms · recomputed EVERY invocation · these ticks = the Horizon's bar-crossings, re-displayed (concord, declared)</span>
+  </div>
+  <div style="overflow-x:auto;margin-top:10px">
+  <svg viewBox="0 0 920 240" role="img" style="min-width:700px;display:block;max-width:100%;height:auto"
+    aria-label="Three gauge rows at run 26, one lineage due Tuesday. Fuel: committed slack 2.00 days on the 3-day scale; free span past the 1-day buffer is 1.00 day, bracket-marked. Pace on the 0-to-1.5 scale: committed tick 0.048; comfort marker 0.75 provisional; core push 0.88 and full push 1.48, both dashed amber because aspirational. Traction: dashed candidate frame, no reading.">
+    <defs><marker id="pa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="6" stroke="var(--drop)" stroke-width="1.5" opacity="0.5"/></pattern></defs>
+    <text x="8" y="24" font-size="12" font-weight="700" fill="var(--ink)">⛽ fuel</text><text x="8" y="36" font-size="8.5" fill="var(--muted)" font-family="ui-monospace,monospace">= slack, re-shown</text>
+    <text x="8" y="48" font-size="10" fill="var(--muted)">"how much chill can I afford?"</text>
+    <rect x="150" y="14" width="300" height="20" rx="4" fill="var(--bg)" stroke="var(--line)"/>
+    <rect x="150" y="14" width="100" height="20" fill="url(#hatch)"/>
+    <rect x="150" y="14" width="200" height="20" rx="4" fill="var(--drop)" opacity="0.55"/><!-- 2.00d committed slack · 3d scale · 100px/d -->
+    <line x1="250" y1="8" x2="250" y2="40" stroke="var(--ink)" stroke-width="2"/>
+    <text x="250" y="52" font-size="9" text-anchor="middle" fill="var(--muted)" font-family="ui-monospace,monospace">buffer 1d — insurance ends here</text>
+    <line x1="250" y1="1" x2="250" y2="7" stroke="var(--ink)"/><line x1="250" y1="4" x2="350" y2="4" stroke="var(--ink)"/><line x1="350" y1="1" x2="350" y2="7" stroke="var(--ink)"/>
+    <text x="300" y="0" font-size="9" text-anchor="middle" fill="var(--ink)" transform="translate(0,2)">⊢free 1.00d⊣ · fill 2.00 of 3d — v1.1 stretch spends this span</text>
+    <text x="470" y="22" font-size="9.5" fill="var(--muted)" font-family="ui-monospace,monospace">hatched-in-solid = insurance (spent only by surprises)</text>
+    <text x="470" y="34" font-size="9.5" fill="var(--muted)" font-family="ui-monospace,monospace">solid past the tick = truly free — the only part for wants</text>
+    <text x="8" y="100" font-size="12" font-weight="700" fill="var(--ink)">⏱ pace</text>
+    <text x="8" y="116" font-size="10" fill="var(--muted)">"is chill self-sustaining?"</text>
+    <rect x="150" y="90" width="300" height="20" rx="4" fill="var(--bg)" stroke="var(--line)"/>
+    <line x1="160" y1="84" x2="160" y2="116" stroke="var(--ink)" stroke-width="2"/>
+    <line x1="300" y1="80" x2="300" y2="120" stroke="var(--ink)" stroke-width="2.5"/>
+    <line x1="326" y1="84" x2="326" y2="116" stroke="var(--warn)" stroke-width="2" stroke-dasharray="4 3"/>
+    <line x1="446" y1="84" x2="446" y2="116" stroke="var(--warn)" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="160" y="128" font-size="9" text-anchor="middle" fill="var(--muted)" font-family="ui-monospace,monospace">committed 0.048</text>
+    <text x="285" y="76" font-size="9" text-anchor="end" fill="var(--ink)" font-family="ui-monospace,monospace">comfort 0.75 (provisional)</text>
+    <text x="334" y="128" font-size="9" text-anchor="middle" fill="var(--warn)" font-family="ui-monospace,monospace">core push 0.88</text>
+    <text x="446" y="140" font-size="9" text-anchor="middle" fill="var(--warn)" font-family="ui-monospace,monospace">full push 1.48</text>
+    <text x="470" y="94" font-size="9.5" fill="var(--muted)" font-family="ui-monospace,monospace">scale 0–1.5 d/d over 300px · dashed tick = a choice,</text>
+    <text x="470" y="106" font-size="9.5" fill="var(--muted)" font-family="ui-monospace,monospace">not an obligation · recomputed run 26 (T to Tue = 2.10d)</text>
+    <text x="8" y="176" font-size="12" font-weight="700" fill="var(--ink)">🎯 traction</text>
+    <text x="8" y="192" font-size="10" fill="var(--muted)">"is the work on the dry line?"</text>
+    <rect x="150" y="166" width="300" height="20" rx="4" fill="var(--bg)" stroke="var(--drop)" stroke-dasharray="5 4"/>
+    <text x="300" y="180" font-size="9.5" text-anchor="middle" fill="var(--muted)" font-family="ui-monospace,monospace">no reading — candidate</text>
+    <text x="470" y="170" font-size="9.5" fill="var(--muted)" font-family="ui-monospace,monospace">would read: share of effort ON the goal chain vs off-line.</text>
+    <text x="470" y="182" font-size="9.5" fill="var(--muted)" font-family="ui-monospace,monospace">Dashed = unpromoted: every cheap proxy lies. May never fill.</text>
+    <line x1="8" y1="212" x2="912" y2="212" stroke="var(--line)"/>
+    <text x="460" y="228" font-size="9.5" text-anchor="middle" fill="var(--muted)">one glance: afford chill? plenty (committed banked) · self-sustaining? yes — 0.88 is the push YOU chose, dissolvable · dry line? unmeasured</text>
+  </svg>
+  </div>
+</section>
+<section style="margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px">
+    <h2 style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0;font-weight:700;color:var(--muted)">② The Trajectory — "how is my performance affecting this race and the next?"</h2>
+    <span style="font-size:10.5px;color:var(--muted);font-family:ui-monospace,Consolas,monospace">the slope view of the same fact model · rendered 06:00 BKK, ~2h older than the fused view — ETAs sit ≤0.08d right of current; re-derived every run</span>
+  </div>
+  <div style="overflow-x:auto;margin-top:10px">
+  <svg viewBox="0 0 940 470" role="img" style="min-width:700px;display:block;max-width:100%;height:auto" aria-label="A trajectory chart. Remaining work, 3.1 days total, stacked at the left segmented by task: demo event 0.1, F8 fix plus bench 1.25, walk-off build 0.5, then three dashed aspirational segments. The comfort line crosses each segment boundary at that task's forecast date: F8 done Tuesday 1am before the demo, core done Tuesday 5pm. The comfort line at 0.75 days per day crosses zero 4.13 days out, 1.98 days past Tuesday's finish line, shading a push wedge of ratio 1.9. A second, core-only trajectory crosses just 0.31 days past the line, ratio 1.15. At the finish line, work the comfort line has not covered spills right into an undated ghost stack for G2, with the guard chip quiet because no dated demand exists yet.">
+      <defs><marker id="ha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+      <pattern id="gh" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="var(--drop)" stroke-width="1.5" opacity="0.5"/></pattern></defs>
+
+      <!-- axes -->
+      <line x1="120" y1="360" x2="920" y2="360" stroke="currentColor" stroke-opacity=".5" marker-end="url(#ha)"/>
+      <line x1="120" y1="360" x2="120" y2="50" stroke="currentColor" stroke-opacity=".5" marker-end="url(#ha)"/>
+      <text x="60" y="200" font-size="10.5" fill="var(--muted)" transform="rotate(-90 60 200)">remaining work (d) · 90px = 1d</text>
+      <text x="126" y="380" font-size="10" fill="var(--muted)">now · Sun 06:00</text>
+      <text x="300" y="380" font-size="10" fill="var(--muted)">Mon</text>
+      <text x="509" y="380" font-size="10" text-anchor="middle" fill="var(--zap)">Tue 10:00 🏁</text>
+      <text x="690" y="380" font-size="10" fill="var(--muted)">Wed</text>
+      <text x="870" y="380" font-size="10" fill="var(--muted)">Thu</text>
+      <text x="880" y="350" font-size="9.5" fill="var(--muted)">180px = 1d</text>
+
+      <!-- work stack at now — SEGMENTED by task, burn order bottom-up; heights by rule 90px/d -->
+      <rect x="104" y="351" width="32" height="9" fill="var(--acc)"/>
+      <rect x="104" y="238.5" width="32" height="112.5" fill="var(--warn-soft)" stroke="var(--warn)"/>
+      <rect x="104" y="193.5" width="32" height="45" fill="var(--warn-soft)" stroke="var(--warn)"/>
+      <rect x="104" y="148.5" width="32" height="45" fill="none" stroke="var(--warn)" stroke-dasharray="5 3"/>
+      <rect x="104" y="103.5" width="32" height="45" fill="none" stroke="var(--warn)" stroke-dasharray="5 3"/>
+      <rect x="104" y="81" width="32" height="22.5" fill="none" stroke="var(--warn)" stroke-dasharray="5 3"/>
+      <text x="98" y="358" font-size="9" text-anchor="end" fill="var(--acc)">demo event ·0.1·</text>
+      <text x="98" y="298" font-size="9" text-anchor="end" fill="var(--warn)">F8 fix + bench 2 ·1.25·</text>
+      <text x="98" y="219" font-size="9" text-anchor="end" fill="var(--warn)">walk-off build ·0.5·</text>
+      <text x="98" y="174" font-size="9" text-anchor="end" fill="var(--muted)">build-fix class ·0.5·</text>
+      <text x="98" y="129" font-size="9" text-anchor="end" fill="var(--muted)">F1/F11 concord ·0.5·</text>
+      <text x="98" y="95" font-size="9" text-anchor="end" fill="var(--muted)">F10 ·0.25·</text>
+
+      <!-- per-task ETAs: comfort line crossing each cumulative boundary; x = 120 + 240*cum -->
+      <circle cx="144" cy="351" r="3" fill="var(--acc)"/>
+      <circle cx="444" cy="238.5" r="3.5" fill="var(--warn)"/>
+      <line x1="444" y1="238.5" x2="444" y2="360" stroke="var(--warn)" stroke-dasharray="2 3"/>
+      <text x="444" y="232" font-size="9.5" text-anchor="middle" fill="var(--warn)" font-weight="700">F8 done Tue ~01:00 — BEFORE the demo, at plain comfort</text>
+      <circle cx="564" cy="193.5" r="3.5" fill="var(--warn)"/>
+      <line x1="564" y1="193.5" x2="564" y2="360" stroke="var(--warn)" stroke-dasharray="2 3"/>
+      <text x="580" y="188" font-size="9.5" fill="var(--warn)">core done Tue ~17:00 (the x1.15 push pulls this before 10:00)</text>
+      <circle cx="684" cy="148.5" r="3" fill="var(--drop)"/>
+      <circle cx="804" cy="103.5" r="3" fill="var(--drop)"/>
+      <text x="744" y="120" font-size="8.5" text-anchor="middle" fill="var(--muted)">tail ETAs Wed-Thu (dissolve first)</text>
+
+      <!-- finish line + delivery pin -->
+      <line x1="509" y1="55" x2="509" y2="360" stroke="var(--zap)" stroke-width="2" stroke-dasharray="7 4"/>
+      <path d="M 509 55 l 26 8 l -26 8 z" fill="var(--zap)"/>
+      <text x="540" y="66" font-size="10" fill="var(--zap)" font-weight="700">delivery pin: banked v1.0 demos HERE regardless of any push</text>
+
+      <!-- comfort line, full stack: (120,81) -> zero at x=863 -->
+      <line x1="120" y1="81" x2="863" y2="360" stroke="var(--ink)" stroke-width="2.5"/>
+      <text x="620" y="255" font-size="10.5" fill="var(--ink)" transform="rotate(20.5 620 255)">comfort line · 0.75 d/d · touches zero Thu ~09:00</text>
+
+      <!-- core-only trajectory: (120,194) -> zero at x=564 -->
+      <line x1="120" y1="194" x2="564" y2="360" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="2 3"/>
+      <text x="300" y="288" font-size="9.5" fill="var(--muted)" transform="rotate(20.5 300 288)">core-only at comfort · touches Tue ~17:00</text>
+
+      <!-- push wedges on the axis -->
+      <rect x="509" y="360" width="354" height="14" fill="var(--warn-soft)"/>
+      <rect x="509" y="360" width="55" height="14" fill="var(--warn)" opacity="0.65"/>
+      <text x="509" y="404" font-size="10.5" fill="var(--warn)" font-weight="700">THE PUSH WEDGE — width IS the ask, never a verdict:</text>
+      <text x="509" y="420" font-size="10" fill="var(--ink)">chase core only → small wedge (dark): ×1.15 of comfort — "I think I could if I push" reads as a 15% push</text>
+      <text x="509" y="436" font-size="10" fill="var(--ink)">chase everything → wide wedge (light): ≈×2 of comfort (1.48 d/d — the pace panel's full-push tick, same number re-displayed) — a real record attempt; yours to want, or not</text>
+
+      <!-- spill -->
+      <line x1="509" y1="227" x2="600" y2="227" stroke="var(--warn)" stroke-width="2" marker-end="url(#ha)"/>
+      <text x="514" y="219" font-size="9.5" fill="var(--warn)">spill at comfort ≈ 1.5d → dissolves, SCORED</text>
+
+      <!-- G2 ghost -->
+      <rect x="600" y="180" width="150" height="95" rx="8" fill="url(#gh)" stroke="var(--drop)" stroke-dasharray="6 4"/>
+      <text x="675" y="215" font-size="10" text-anchor="middle" fill="var(--muted)">G2 — undated ghost</text>
+      <text x="675" y="230" font-size="9" text-anchor="middle" fill="var(--muted)">inherits spill as OPTIONS</text>
+      <text x="675" y="244" font-size="9" text-anchor="middle" fill="var(--muted)">(dissolve strips obligation)</text>
+
+      <!-- guard chip -->
+      <text x="600" y="300" font-size="9" fill="var(--muted)">🎧 the guard lives on the Horizon below (one chip, one surface)</text>
+    </svg>
+  </div>
+</section>
+<section style="margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px">
+    <h2 style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0;font-weight:700;color:var(--muted)">③ The Horizon — "the overall view of the rest of the race"</h2>
+    <span style="font-size:10.5px;color:var(--muted);font-family:ui-monospace,Consolas,monospace">rows = the priority stack · x = time · bar length = estimate ÷ comfort 0.75 (PROVISIONAL) · one view, one rent</span>
+  </div>
+  <div style="overflow-x:auto;margin-top:10px">
+  <svg viewBox="0 0 940 520" role="img" style="min-width:760px;display:block;max-width:100%;height:auto"
+    aria-label="Fused queue-times-time chart. Nine task rows in priority order, each with name and estimate at the left; bars cascade along the time axis at comfort pace 0.75 days per day. The demo event and F8 plus bench finish before Tuesday's red finish line — F8 about 1am Tuesday. The walk-off bar crosses the line; a times-1.14 push pulls it left. Three dashed aspirational bars sit fully right of the line and dissolve. Below a divider, three G2 bars continue hatched and marked illustrative because G2 has no date; the guard chip is quiet.">
+    <defs><marker id="fz" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+    <pattern id="fzg" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="var(--drop)" stroke-width="1.5" opacity="0.45"/></pattern></defs>
+    <!-- day grid: 85px/day from now 00:45Z Sun 07:45 BKK -->
+    <g stroke="var(--line)" stroke-width="1">
+      <line x1="288" y1="40" x2="288" y2="440"/><line x1="373" y1="40" x2="373" y2="440"/>
+      <line x1="458" y1="40" x2="458" y2="440"/><line x1="543" y1="40" x2="543" y2="440"/>
+      <line x1="628" y1="40" x2="628" y2="440"/><line x1="713" y1="40" x2="713" y2="440"/>
+      <line x1="798" y1="40" x2="798" y2="440"/><line x1="883" y1="40" x2="883" y2="440"/>
+    </g>
+    <g font-size="9" fill="var(--muted)">
+      <text x="230" y="34">now · Sun 07:45</text><text x="288" y="452" text-anchor="middle">Mon</text>
+      <text x="373" y="452" text-anchor="middle">Tue</text><text x="458" y="452" text-anchor="middle">Wed</text>
+      <text x="543" y="452" text-anchor="middle">Thu</text><text x="628" y="452" text-anchor="middle">Fri</text>
+      <text x="713" y="452" text-anchor="middle">Sat</text><text x="798" y="452" text-anchor="middle">Sun</text><text x="883" y="452" text-anchor="middle">Mon</text>
+    </g>
+    <rect x="211" y="40" width="19" height="400" fill="var(--agent-soft)" stroke="var(--agent)" stroke-dasharray="4 3" opacity="0.9"/>
+    <text x="205" y="58" font-size="9" text-anchor="end" fill="var(--agent)" font-weight="700">GLORY SWEEP · ≈0.2d spent, left of now</text>
+    <text x="205" y="71" font-size="8.5" text-anchor="end" fill="var(--agent)">goal model · 7 glossary entries · this board ×7 runs</text>
+    <text x="205" y="84" font-size="8.5" text-anchor="end" fill="var(--muted)">retro-priced (run-10 sense) — why the queue looks like this</text>
+    <line x1="230" y1="40" x2="230" y2="440" stroke="var(--muted)"/>
+    <!-- finish line Tue 10:00 BKK -->
+    <line x1="408" y1="40" x2="408" y2="440" stroke="var(--zap)" stroke-width="2" stroke-dasharray="7 4"/>
+    <path d="M 408 40 l 22 7 l -22 7 z" fill="var(--zap)"/>
+    <text x="408" y="30" font-size="10" text-anchor="middle" fill="var(--zap)" font-weight="700">Tue 10:00 🏁 · delivery pin — banked v1.0 demos here</text>
+    <!-- G1 rows -->
+    <g font-size="10.5">
+      <text x="8" y="82" fill="var(--acc)" font-weight="600">demo event</text><text x="196" y="82" text-anchor="end" fill="var(--acc)" font-family="ui-monospace,monospace">0.1</text>
+      <rect x="230" y="70" width="15" height="18" fill="var(--acc)"/>
+      <text x="252" y="82" font-size="8.5" fill="var(--muted)">done Sun ~11:00 — or slides to its pin; committed either way</text>
+
+      <text x="8" y="116" fill="var(--ink)" font-weight="600">F8 fix + bench 2</text><text x="196" y="116" text-anchor="end" fill="var(--warn)" font-family="ui-monospace,monospace">1.25</text>
+      <rect x="245" y="104" width="142" height="18" fill="var(--warn-soft)" stroke="var(--warn)"/>
+      <text x="391" y="116" font-size="9" fill="var(--warn)" font-weight="700">→ Tue ~01:00, BEFORE 🏁 at plain comfort</text>
+
+      <text x="8" y="150" fill="var(--ink)" font-weight="600">walk-off build</text><text x="196" y="150" text-anchor="end" fill="var(--warn)" font-family="ui-monospace,monospace">0.5</text>
+      <rect x="387" y="138" width="57" height="18" fill="var(--warn-soft)" stroke="var(--warn)"/>
+      <text x="450" y="150" font-size="9" fill="var(--warn)">crosses 🏁 → the ×1.14 push pulls it left of the flag</text>
+
+      <text x="8" y="184" fill="var(--muted)">build-fix class</text><text x="196" y="184" text-anchor="end" fill="var(--muted)" font-family="ui-monospace,monospace">0.5</text>
+      <rect x="444" y="172" width="57" height="18" fill="none" stroke="var(--warn)" stroke-dasharray="5 3"/>
+      <text x="507" y="184" font-size="9" fill="var(--muted)">right of 🏁 entirely → dissolves first, scored</text>
+
+      <text x="8" y="218" fill="var(--muted)">F1/F11 concord</text><text x="196" y="218" text-anchor="end" fill="var(--muted)" font-family="ui-monospace,monospace">0.5</text>
+      <rect x="501" y="206" width="57" height="18" fill="none" stroke="var(--warn)" stroke-dasharray="5 3"/>
+
+      <text x="8" y="252" fill="var(--muted)">F10 propose-default</text><text x="196" y="252" text-anchor="end" fill="var(--muted)" font-family="ui-monospace,monospace">0.25</text>
+      <rect x="558" y="240" width="28" height="18" fill="none" stroke="var(--warn)" stroke-dasharray="5 3"/>
+      <text x="592" y="252" font-size="9" fill="var(--muted)">G1 stack ends Thu ~09:00 at comfort — the full-push ask is ×1.91</text>
+    </g>
+    <!-- divider + G2 -->
+    <line x1="8" y1="278" x2="912" y2="278" stroke="var(--line)"/>
+    <rect x="4" y="286" width="908" height="128" rx="10" fill="none" stroke="var(--drop)" stroke-dasharray="6 4"/>
+    <text x="14" y="304" font-size="10" fill="var(--muted)" font-weight="700">G2 · undated ghost — bars ILLUSTRATIVE (positions invented from comfort continuation; no date exists)</text>
+    <g font-size="10.5">
+      <text x="8" y="330" fill="var(--muted)">#91 remainder</text><text x="196" y="330" text-anchor="end" fill="var(--drop)" font-family="ui-monospace,monospace">~1.0</text>
+      <rect x="586" y="318" width="113" height="18" fill="url(#fzg)" stroke="var(--drop)" stroke-dasharray="4 3"/>
+      <text x="8" y="364" fill="var(--muted)">register audit</text><text x="196" y="364" text-anchor="end" fill="var(--drop)" font-family="ui-monospace,monospace">~0.75</text>
+      <rect x="699" y="352" width="85" height="18" fill="url(#fzg)" stroke="var(--drop)" stroke-dasharray="4 3"/>
+      <text x="8" y="398" fill="var(--muted)">DSL preview (#86)</text><text x="196" y="398" text-anchor="end" fill="var(--drop)" font-family="ui-monospace,monospace">~1.0</text>
+      <rect x="784" y="386" width="113" height="18" fill="url(#fzg)" stroke="var(--drop)" stroke-dasharray="4 3"/>
+    </g>
+    <text x="14" y="434" font-size="9" fill="var(--agent)">🎧 guard: computed run 29 · QUIET — dating G2 turns these hatched bars real and gives the guard a demand · spill from G1's dashed bars lands here SCORED, as options</text>
+    <text x="8" y="478" font-size="9.5" fill="var(--muted)">same fact model as the pace panel above — its FUEL = the gap before 🏁; its push ticks = these crossings (core ×1.17 = 0.88 d/d · full ≈×2 = 1.48 d/d — the pace panel's ticks, re-displayed).</text>
+    <text x="8" y="492" font-size="9.5" fill="var(--muted)">Scale declared: 85px/day · rows in burn order · estimates t-shirt ×1.0 (three actuals, all ahead).</text>
+    <text x="8" y="510" font-size="9.5" fill="var(--muted)">⚠ the cascade renders SERIAL execution at one pace — the honest simplification; parallel agent work would pull real ETAs earlier, never later.</text>
+  </svg>
+  </div>
+</section>
+
+<div class="constraint">
+  <span class="zaptag">⚡ THE CONSTRAINT — run 25: your three words; every bar below the flag waits on them</span>
+  <div class="item"><span class="n">①</span><span>comfort pace — a number, or "seed it" (0.75 stays provisional)</span><span class="mv human">SAY</span></div>
+  <div class="item"><span class="n">②</span><span>the walk-off word — A · B · "A with B's typing" · defer (🥊 bench) — gates the third bar</span><span class="mv human">PICK</span></div>
+  <div class="item" style="border-bottom:0"><span class="n">③</span><span>ratify #90-merged (executed under delegation; Nordize review went post-merge, contract-guided)</span><span class="mv human">RATIFY</span></div>
+</div>
+
+<div class="grid">
+  <div class="q q2">
+    <h2>Next — the queued spine</h2>
+    <p class="verb">the stretch, in burn order (same rows as the Horizon's bars)</p>
+    <div class="item waits"><span class="n">F8</span><span>fix + bench 2 (<a href="https://github.com/Nordize/karant/issues/87">#87</a>) <span class="mv agent">DO on release</span> <span class="why">· on a branch, demo path frozen; merges only behind proven gates</span></span></div>
+    <div class="item waits"><span class="n">🥊</span><span>walk-off winner built (<a href="https://github.com/Nordize/karant/issues/91">#91</a>) <span class="mv agent">DO on pick</span></span></div>
+    <div class="item inert"><span class="n">tail</span><span>build-fix class · F1/F11 concord · F10 <span class="why">· born dissolve-candidates; G2 inherits them scored</span></span></div>
+    <div class="item inert"><span class="n">G2</span><span>#91 remainder · semantic-register audit · DSL preview (<a href="https://github.com/Nordize/karant/issues/86">#86</a> fires after Tue) <span class="why">· undated</span></span></div>
+  </div>
+  <div class="q q3">
+    <h2>Urgent · Not important (this lens)</h2>
+    <p class="verb">delegate — none touches the Tuesday chain</p>
+    <div class="item yours"><span class="n"><a href="https://github.com/Nordize/karant/issues/74">#74</a> <a href="https://github.com/Nordize/karant/issues/21">#21</a> <a href="https://github.com/Nordize/karant/issues/15">#15</a> <a href="https://github.com/Nordize/karant/issues/16">#16</a> <a href="https://github.com/Nordize/karant/issues/18">#18</a> <a href="https://github.com/Nordize/karant/issues/47">#47</a></span>
+      <span><span class="mv agent">DELEGATE</span> <span class="why">· ready-for-agent; each needs only a go</span></span></div>
+    <div class="item yours"><span class="n"><a href="https://github.com/Nordize/karant/issues/22">#22</a></span>
+      <span><span class="mv human">DO</span> <span class="why">· ~10 min, clears the #20→#19 chain — off the Tuesday path</span></span></div>
+  </div>
+  <div class="q q4" style="grid-column:1 / -1">
+    <h2>Neither — excluded, still existing</h2>
+    <p class="verb">a slice is a view, not the graph</p>
+    <div class="item"><span class="n">#28 #29 #38–#46 #57 #65 #66</span>
+      <span>the undecided desk <span class="mv human">ASK ×16</span> <span class="who w">⏳ Anak</span> <span class="why">· excluded by the lens, not by difficulty</span></span></div>
+    <div class="item"><span class="n">#71 #78 · #92 · #82 #83 #86</span>
+      <span class="why">Changework's parents · the coordination charter (filed, open) · armed tripwires (#86: trail 1 counted; Tuesday is trail 2) · settled this week: #84 answered (close when ready) · #85 folds landed · PR #90 MERGED</span></div>
+  </div>
+</div>
+
+<div class="discover"><strong>Recent constraint moves:</strong> run 11 — by COMPLETION (the merge admitted) ·
+runs 15–16 — DEMO-READY ruled, the side-quest ladder priced and then executed whole in the
+delegated shift · runs 17b–25 — the sponsor's instrument audit: stale gauges caught, unratified
+Friday date evicted from the math, the goal model rewritten (versions share deadline · dissolve ·
+guard rail), the board redesigned to the sponsor's fused form — and two agent failures confessed
+and armored (the palimpsest; the misframed confirm option). Full run log: docs/record/lens-runs.md.</div>
+
+<footer>⚠ AI draft · not reviewed. One fact model per run; every mark from the grammar table;
+the board is regenerated WHOLE each run, never patched blind. Archive of the pre-rebuild page:
+archive/palimpsest-through-run23.html. THE PAGE ENDS HERE.</footer>
+</div>
+</div>
